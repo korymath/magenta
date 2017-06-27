@@ -46,7 +46,7 @@ py_library(
     srcs = ["fastgen.py"],
     visibility = [
         # internal notebook binary
-        # internal models/nsynth/embedding_rnn:__subpackages__
+        # internal model:nsynth/embedding_rnn
         "//magenta/tools/pip:__subpackages__",
     ],
     deps = [
