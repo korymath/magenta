@@ -1,6 +1,6 @@
 """embedding_rnn: vector_rnn for embeddings.
 
-embedding_rnn estends vector_rnn / sketch_rnn to NSynth generation.
+embedding_rnn extends vector_rnn / sketch_rnn to NSynth generation.
 """
 
 import math
@@ -1356,8 +1356,10 @@ def save_model(sess, model_save_path):
 
 def load_model(sess, model_path):
   saver = tf.train.Saver(tf.global_variables())  # all_variables() replaced
-  checkpoint_path = model_path
-  ckpt = tf.train.get_checkpoint_state(checkpoint_path)
+  ckpt = tf.train.get_checkpoint_state(model_path)
+
+  # print('ckpt', ckpt)
+  # print('ckpt.model_checkpoint_path', ckpt.model_checkpoint_path)
 
   if ckpt and ckpt.model_checkpoint_path:
     print 'Loading model from checkpoint:', ckpt.model_checkpoint_path
@@ -1367,7 +1369,7 @@ def load_model(sess, model_path):
   else:
     print 'Skipping evaluation. No checkpoint found.'
     tf.logging.warning('Skipping evaluation. No checkpoint found in: %s',
-                       checkpoint_path)
+                       model_path)
 
 
 def train(sess, model, eval_model, data_set):
