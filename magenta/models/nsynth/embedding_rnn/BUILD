@@ -53,7 +53,7 @@ py_binary(
     ],
     deps = [
         ":embedding_rnn",
-        "//third_party/magenta/models/nsynth/wavenet:fastgen",
+	"//magenta/models/nsynth/wavenet:fastgen",
         # numpy dep
         # sklearn dep
         # tensorflow dep

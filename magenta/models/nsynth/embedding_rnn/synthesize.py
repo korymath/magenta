@@ -4,24 +4,26 @@ import math
 import operator as op
 import pickle
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import numpy as np
+# todo(kmathewson): make seaborn load if available
 import seaborn as sns
-import tensorflow.google as tf
+import tensorflow as tf
 import magenta.models.nsynth.wavenet.fastgen as fastgen
-from magenta.models.nsynth.wavenet.embedding_rnn import embedding_rnn
+from magenta.models.nsynth.embedding_rnn import embedding_rnn
 
 FLAGS = tf.flags.FLAGS
 
-tf.flags.DEFINE_string('data_dir', '/tmp/embedding_rnn/data',
-                       'data directory numpy cpickle of vector file.')
-tf.flags.DEFINE_string('log_root', '/tmp/embedding_rnn',
-                       'directory to store all dumps.')
-tf.flags.DEFINE_string('checkpoint_path', '',
-                       'Path to embedding_rnn checkpoint to restore.')
-tf.flags.DEFINE_string('nsynth_checkpoint_path', '',
-                       'Path to NSynth checkpoint to restore.')
-tf.flags.DEFINE_string('hparam', 'rnn_size=1000,data_set=train_z.npy',
-                       'default model params string to be parsed by HParams.')
+# tf.flags.DEFINE_string('data_dir', '/tmp/embedding_rnn/data',
+#                       'data directory numpy cpickle of vector file.')
+# tf.flags.DEFINE_string('log_root', '/tmp/embedding_rnn',
+#                        'directory to store all dumps.')
+# tf.flags.DEFINE_string('checkpoint_path', '',
+#                        'Path to embedding_rnn checkpoint to restore.')
+# tf.flags.DEFINE_string('nsynth_checkpoint_path', '',
+#                        'Path to NSynth checkpoint to restore.')
+# tf.flags.DEFINE_string('hparam', 'rnn_size=1000,data_set=train_z.npy',
+#                        'default model params string to be parsed by HParams.')
 
 
 def invert_to_model_format(sample):
@@ -233,9 +235,9 @@ def visualize_embed_interp(num_rows=1,
     print 'Visualizing with Seaborn'
 
   # check if the generation directory exists, if not create it
-  if not gfile.Exists(gen_path_root):
+  if not tf.gfile.Exists(gen_path_root):
     print 'created generation directory:', gen_path_root
-    gfile.MkDir(gen_path_root)
+    tf.gfile.MkDir(gen_path_root)
 
   # number of rows to generated interpolations
   rows = range(num_rows)
@@ -290,7 +292,7 @@ def visualize_embed_interp(num_rows=1,
 
     # save fig1
     gen_file_path = (gen_path_root + exp_name + '_fig1a' + '.png')
-    with gfile.GFile(gen_file_path, 'w') as f:
+    with tf.gfile.GFile(gen_file_path, 'w') as f:
       plt.savefig(f)
     plt.close(fig)
 
@@ -327,7 +329,7 @@ def visualize_embed_interp(num_rows=1,
 
     # save fig1
     gen_file_path = (gen_path_root + exp_name + '_fig1b' + '.png')
-    with gfile.GFile(gen_file_path, 'w') as f:
+    with tf.gfile.GFile(gen_file_path, 'w') as f:
       plt.savefig(f)
     plt.close(fig)
 
@@ -397,7 +399,7 @@ def visualize_embed_interp(num_rows=1,
     # save fig2
     gen_file_path = (
         gen_path_root + exp_name + '_row' + str(j) + '_fig2' + '.png')
-    with gfile.GFile(gen_file_path, 'w') as f:
+    with tf.gfile.GFile(gen_file_path, 'w') as f:
       plt.savefig(f)
     plt.close(fig)
 
@@ -423,7 +425,7 @@ def visualize_embed_interp(num_rows=1,
     # save fig3
     gen_file_path = (
         gen_path_root + exp_name + '_row' + str(j) + '_fig3' + '.png')
-    with gfile.GFile(gen_file_path, 'w') as f:
+    with tf.gfile.GFile(gen_file_path, 'w') as f:
       plt.savefig(f)
     plt.close(fig)
 
@@ -451,7 +453,7 @@ def visualize_embed_interp(num_rows=1,
     # set the file name
     gen_file_path = (
         gen_path_root + exp_name + '_row' + str(j) + '_fig4' + '.png')
-    with gfile.GFile(gen_file_path, 'w') as f:
+    with tf.gfile.GFile(gen_file_path, 'w') as f:
       plt.savefig(f)
     plt.close(fig)
 
@@ -495,14 +497,14 @@ def visualize_embed_interp(num_rows=1,
       # set the file name
       gen_file_path = (
           gen_path_root + exp_name + '_row' + str(j) + '_fig5' + '.png')
-      with gfile.GFile(gen_file_path, 'w') as f:
+      with tf.gfile.GFile(gen_file_path, 'w') as f:
         plt.savefig(f)
       plt.close(fig)
     print 'Visuals saved to:', gen_path_root
 
 
 def copy_hps(hps):
-  temp = tf.HParams()
+  temp = tf.contrib.training.HParams()  # tf.HParams()
   temp._init_from_proto(hps.to_proto())
   return temp
 
@@ -557,14 +559,25 @@ def run_synth_and_viz(hps_model=None,
   print 'load trained model', model_save_path
   # load model
   embedding_rnn.load_model(sess, model_save_path)
+  
+  #with tf.gfile.Open(('/c60_z.npy'), 'r') as f:
+  with tf.gfile.Open(('/home/ubuntu/magenta-models/embedding_rnn/data/original/train_z.npy'), 'r') as f:
+    test_recon_z = np.load(f)
+  print('test_recon_z.shape', test_recon_z.shape)
 
   # load testing reconstruction set
-  with gfile.Open(('60_key.npy'), 'r') as f:
-    test_recon_list_keys = np.load(f)
-  print test_recon_list_keys[:1]
-  with gfile.Open(('/c60_z.npy'), 'r') as f:
-    test_recon_z = np.load(f)
-  print 'test_recon_z.shape', test_recon_z.shape
+  # with tf.gfile.Open(('60_key.npy'), 'r') as f:
+  # use the actual path of the key file
+  # with tf.gfile.Open(('/home/ubuntu/magenta-models/embedding_rnn/data/original/train_pitch_one_hot.npy'), 'r') as f:
+   # test_recon_list_keys = np.load(f)
+
+  # TODO(korymath): can we recover the keys for the recon labelling?
+  # add a set of random keys
+  import random
+  import string
+  test_recon_list_keys = (np.asarray([''.join(random.choice(string.ascii_uppercase + string.digits) 
+    for _ in range(20)) for _ in range(test_recon_z.shape[0])]))
+  print('test_recon_list_keys[:1]', test_recon_list_keys[:1])
 
   # only process certain row indecies if slice_test_set is set
   if slice_test_set is not None:
@@ -606,7 +619,7 @@ def run_synth_and_viz(hps_model=None,
   if hps_model.pca_dim_reduce == 1:
     # If working with PCA data in the model then need to transform the
     # test recon z with the loaded pickle for PCA
-    pkl_file = gfile.Open(model_save_path + 'pca.pkl', 'r')
+    pkl_file = tf.gfile.Open(model_save_path + 'pca.pkl', 'r')
     pca = pickle.load(pkl_file)
     modelled_seq_width = pca.n_components
     print pca
@@ -714,7 +727,7 @@ def run_synth_and_viz(hps_model=None,
   print 'num_rows:', num_rows
   print 'z_all.shape', z_all.shape
   print 'generating file paths'
-  gen_path_root = ('fastgen-blog/' + gen_path_subdir)
+  gen_path_root = ('/home/ubuntu/magenta_generation/' + gen_path_subdir)
 
   ## Build and save figures
   visualize_embed_interp(
@@ -736,20 +749,27 @@ def run_synth_and_viz(hps_model=None,
     gen_files = []
     for key in key_all:
       gen_file_path = gen_path_root + exp_name + key + '.wav'
-      gen_files.append(gfile.GFile(gen_file_path, 'w'))
-    # print gen_files
+      # gen_files.append(tf.gfile.GFile(gen_file_path, 'w+'))
+      gen_files.append(gen_file_path)
+    
+    print('gen_files', gen_files)
+    print('Generating: {} files...'.format(len(gen_files)))
 
     ## Synthesize the originals, interpolations, and reconstructed embeddings
     # Define the location of the NSynth WaveNet model checkpoint
 
     # test generation with the noise model
-    checkpoint_path = ('')
+
+    # TODO(kmathewson): need a checkpoint for a wavenet model
+    checkpoint_path = ('/home/ubuntu/wavenet-ckpt/model.ckpt-200000')
 
     print 'Using checkpoint:', checkpoint_path
     # Synthesize audio with fastgen.synthesize() from third_party magenta
-    print 'Synthesizing samples'
-    fastgen.synthesize(
-        encodings=z_all, save_paths=gen_files, checkpoint_path=checkpoint_path)
+    print 'Synthesizing samples...'
+    fastgen.synthesize(encodings=z_all, 
+                       save_paths=gen_files, 
+                       checkpoint_path=checkpoint_path)
+    
     print 'Samples synthesized'
 
     # make sure that the files are appropriately closed
@@ -789,7 +809,7 @@ def make_aggregate_boxplot(all_mse=None,
   fig.suptitle(title, fontsize=16)
 
   # build box and swarm plot
-  sns.axlabel(xlabel='', ylabel='MSE', fontsize=16)
+  sns.utils.axlabel(xlabel='', ylabel='MSE', fontsize=16)
   sns.boxplot(data=sorted_vals, width=.4, ax=axes)
 
   plt.xticks(plt.xticks()[0], sorted_keys)
@@ -803,228 +823,228 @@ def make_aggregate_boxplot(all_mse=None,
 
   # set the file name
   gen_file_path = (gen_path_root + 'aggregate_fig6' + '.png')
-  with gfile.GFile(gen_file_path, 'w') as f:
+  with tf.gfile.GFile(gen_file_path, 'w') as f:
     plt.savefig(f)
   plt.close(fig)
   print 'Fig6 saved to:', gen_path_root
 
 
-def blog_5():
-  """Synthesis code to match final_experiment in run.py."""
-  # default hyperparameters
-  hps_model = embedding_rnn.default_hps()
+# def blog_5():
+#   """Synthesis code to match final_experiment in run.py."""
+#   # default hyperparameters
+#   hps_model = embedding_rnn.default_hps()
 
-  ## Set training specific hyperparameters
-  # NOTE: these parameters MUST match the loaded model hyperparameters
-  # blog_post_large default parameters
-  # as defined in script_utils.py
-  hps_model.parse('rnn_size=%d' % 512)
-  hps_model.parse('model=%s' % 'layer_norm')
-  hps_model.parse('num_layers=%d' % 4)
-  hps_model.parse('enc_rnn_size=%d' % 512)
-  hps_model.parse('z_size=%d' % 128)
-  hps_model.parse('num_mixture=%d' % 20)
+#   ## Set training specific hyperparameters
+#   # NOTE: these parameters MUST match the loaded model hyperparameters
+#   # blog_post_large default parameters
+#   # as defined in script_utils.py
+#   hps_model.parse('rnn_size=%d' % 512)
+#   hps_model.parse('model=%s' % 'layer_norm')
+#   hps_model.parse('num_layers=%d' % 4)
+#   hps_model.parse('enc_rnn_size=%d' % 512)
+#   hps_model.parse('z_size=%d' % 128)
+#   hps_model.parse('num_mixture=%d' % 20)
 
-  # generation job/synthesize/visualize parameters
-  model_path_subdir = 'blog_5/'
-  gen_path_subdir = 'blog_5_full_gen/'
-  job_name = 'blog_5'
-  num_rows = 1
-  just_figures = 1
-  temperature = 0.5
-  temperature_2 = 0.3
-  greedy = False
+#   # generation job/synthesize/visualize parameters
+#   model_path_subdir = 'blog_5/'
+#   gen_path_subdir = 'blog_5_full_gen/'
+#   job_name = 'blog_5'
+#   num_rows = 1
+#   just_figures = 1
+#   temperature = 0.5
+#   temperature_2 = 0.3
+#   greedy = False
 
-  print 'temps and greedy', temperature, temperature_2, greedy
+#   print 'temps and greedy', temperature, temperature_2, greedy
 
-  ## sweep parameters:
-  unconditionals = [0, 1]
-  difference_input = [0, 1]
-  no_sample_vaes = [0, 1]
+#   ## sweep parameters:
+#   unconditionals = [0, 1]
+#   difference_input = [0, 1]
+#   no_sample_vaes = [0, 1]
 
-  # final experiment
-  # run the sweep
-  for diff in difference_input:
-    for unconditional in unconditionals:
-      # if not unconditional, then condition on the autoencoder
-      if unconditional == 0:
-        # compare variational vs. basic autoencoder
-        for no_sample_vae in no_sample_vaes:
-          exp_name = '{}_unc{}_nosam{}_d{}'.format(job_name, unconditional,
-                                                   no_sample_vae, diff)
-          hps_model.parse('unconditional=%d' % unconditional)
-          hps_model.parse('difference_input=%d' % diff)
-          hps_model.parse('no_sample_vae=%d' % no_sample_vae)
-          model_save_path = (
-              '/cns/is-d/home/brain-arts/rs=6.3/experiments/'
-              'korymath/embedding_rnn/' + model_path_subdir + exp_name + '/')
-          # run the synthesis and visualization
-          run_synth_and_viz(
-              hps_model=hps_model,
-              model_save_path=model_save_path,
-              gen_path_subdir=gen_path_subdir,
-              num_rows=num_rows,
-              just_figures=just_figures,
-              exp_name=exp_name,
-              temperature=temperature,
-              temperature_2=temperature_2,
-              greedy=greedy)
-      else:
-        exp_name = '{}_unc{}_d{}'.format(job_name, unconditional, diff)
-        hps_model.parse('unconditional=%d' % unconditional)
-        hps_model.parse('difference_input=%d' % diff)
-        model_save_path = (
-            '/cns/is-d/home/brain-arts/rs=6.3/experiments/'
-            'korymath/embedding_rnn/' + model_path_subdir + exp_name + '/')
-        # run the synthesis and visualization
-        run_synth_and_viz(
-            hps_model=hps_model,
-            model_save_path=model_save_path,
-            gen_path_subdir=gen_path_subdir,
-            num_rows=num_rows,
-            just_figures=just_figures,
-            exp_name=exp_name,
-            temperature=temperature,
-            temperature_2=temperature_2,
-            greedy=greedy)
+#   # final experiment
+#   # run the sweep
+#   for diff in difference_input:
+#     for unconditional in unconditionals:
+#       # if not unconditional, then condition on the autoencoder
+#       if unconditional == 0:
+#         # compare variational vs. basic autoencoder
+#         for no_sample_vae in no_sample_vaes:
+#           exp_name = '{}_unc{}_nosam{}_d{}'.format(job_name, unconditional,
+#                                                    no_sample_vae, diff)
+#           hps_model.parse('unconditional=%d' % unconditional)
+#           hps_model.parse('difference_input=%d' % diff)
+#           hps_model.parse('no_sample_vae=%d' % no_sample_vae)
+#           model_save_path = (
+#               '/cns/is-d/home/brain-arts/rs=6.3/experiments/'
+#               'korymath/embedding_rnn/' + model_path_subdir + exp_name + '/')
+#           # run the synthesis and visualization
+#           run_synth_and_viz(
+#               hps_model=hps_model,
+#               model_save_path=model_save_path,
+#               gen_path_subdir=gen_path_subdir,
+#               num_rows=num_rows,
+#               just_figures=just_figures,
+#               exp_name=exp_name,
+#               temperature=temperature,
+#               temperature_2=temperature_2,
+#               greedy=greedy)
+#       else:
+#         exp_name = '{}_unc{}_d{}'.format(job_name, unconditional, diff)
+#         hps_model.parse('unconditional=%d' % unconditional)
+#         hps_model.parse('difference_input=%d' % diff)
+#         model_save_path = (
+#             '/cns/is-d/home/brain-arts/rs=6.3/experiments/'
+#             'korymath/embedding_rnn/' + model_path_subdir + exp_name + '/')
+#         # run the synthesis and visualization
+#         run_synth_and_viz(
+#             hps_model=hps_model,
+#             model_save_path=model_save_path,
+#             gen_path_subdir=gen_path_subdir,
+#             num_rows=num_rows,
+#             just_figures=just_figures,
+#             exp_name=exp_name,
+#             temperature=temperature,
+#             temperature_2=temperature_2,
+#             greedy=greedy)
 
 
-def final_experiment():
-  """Synthesis code to match final_experiment in run.py."""
-  # default hyperparameters
-  hps_model = embedding_rnn.default_hps()
+# def final_experiment():
+#   """Synthesis code to match final_experiment in run.py."""
+#   # default hyperparameters
+#   hps_model = embedding_rnn.default_hps()
 
-  ## Set training specific hyperparameters
-  # NOTE: these parameters MUST match the loaded model hyperparameters
-  # blog_post_large default parameters
-  # as defined in script_utils.py
+#   ## Set training specific hyperparameters
+#   # NOTE: these parameters MUST match the loaded model hyperparameters
+#   # blog_post_large default parameters
+#   # as defined in script_utils.py
 
-  # generation job/synthesize/visualize parameters
-  job_name = 'blog_13'
-  gen_path_subdir = 'blog_13_greedy_06_03_agg_noise_borg/'
-  slice_test_set = range(912)
-  num_rows = 4  # len(slice_test_set)  # 912
-  # check slice test set and number of rows
-  if num_rows > len(slice_test_set):
-    # num_rows must be < slice_test_set,
-    # else set num_rows to len(slice_test_set)
-    num_rows = len(slice_test_set)
-  just_figures = 0
-  temperature = 0.6
-  temperature_2 = 0.3
-  greedy = False
+#   # generation job/synthesize/visualize parameters
+#   job_name = 'blog_13'
+#   gen_path_subdir = 'blog_13_greedy_06_03_agg_noise_borg/'
+#   slice_test_set = range(912)
+#   num_rows = 4  # len(slice_test_set)  # 912
+#   # check slice test set and number of rows
+#   if num_rows > len(slice_test_set):
+#     # num_rows must be < slice_test_set,
+#     # else set num_rows to len(slice_test_set)
+#     num_rows = len(slice_test_set)
+#   just_figures = 0
+#   temperature = 0.6
+#   temperature_2 = 0.3
+#   greedy = False
 
-  model_path_subdir = 'blog_13/'
-  hps_model.parse('rnn_size=%d' % 1024)
-  hps_model.parse('model=%s' % 'layer_norm')
-  hps_model.parse('num_layers=%d' % 2)
-  hps_model.parse('enc_rnn_size=%d' % 1024)
-  hps_model.parse('z_size=%d' % 128)
-  hps_model.parse('num_mixture=%d' % 20)
+#   model_path_subdir = 'blog_13/'
+#   hps_model.parse('rnn_size=%d' % 1024)
+#   hps_model.parse('model=%s' % 'layer_norm')
+#   hps_model.parse('num_layers=%d' % 2)
+#   hps_model.parse('enc_rnn_size=%d' % 1024)
+#   hps_model.parse('z_size=%d' % 128)
+#   hps_model.parse('num_mixture=%d' % 20)
 
-  ## sweep parameters:
-  pca_dim_reduce = [0]  # [0, 1]
-  unconditionals = [0]  # [0, 1]
-  difference_input = [0]  # [0, 1]
+#   ## sweep parameters:
+#   pca_dim_reduce = [0]  # [0, 1]
+#   unconditionals = [0]  # [0, 1]
+#   difference_input = [0]  # [0, 1]
 
-  # collect all mse in a dictionary
-  # each experiment is keyed by experiment name, and contains array of errors
-  all_mse = {}
-  all_mse_counter = 0
+#   # collect all mse in a dictionary
+#   # each experiment is keyed by experiment name, and contains array of errors
+#   all_mse = {}
+#   all_mse_counter = 0
 
-  # final experiment
-  # run the sweep
-  for pca_red in pca_dim_reduce:
-    for diff in difference_input:
-      for unconditional in unconditionals:
-        # if not unconditional, then condition on the autoencoder
-        if unconditional == 0:
-          # compare variational vs. basic autoencoder
-          no_sample_vaes = [0]  # [0, 1]
-          for no_sample_vae in no_sample_vaes:
-            exp_name = '{}_unc{}_nosam{}_d{}_pca{}'.format(
-                job_name, unconditional, no_sample_vae, diff, pca_red)
-            hps_model.parse('pca_dim_reduce=%d' % pca_red)
-            hps_model.parse('unconditional=%d' % unconditional)
-            hps_model.parse('difference_input=%d' % diff)
-            hps_model.parse('no_sample_vae=%d' % no_sample_vae)
-            model_save_path = (
-                '/cns/is-d/home/brain-arts/rs=6.3/experiments/'
-                'korymath/embedding_rnn/' + model_path_subdir + exp_name + '/')
-            # run the synthesis and visualization
-            (all_mse[exp_name], gen_path_root) = run_synth_and_viz(
-                hps_model=hps_model,
-                model_save_path=model_save_path,
-                gen_path_subdir=gen_path_subdir,
-                num_rows=num_rows,
-                just_figures=just_figures,
-                exp_name=exp_name,
-                temperature=temperature,
-                temperature_2=temperature_2,
-                greedy=greedy,
-                slice_test_set=slice_test_set)
+#   # final experiment
+#   # run the sweep
+#   for pca_red in pca_dim_reduce:
+#     for diff in difference_input:
+#       for unconditional in unconditionals:
+#         # if not unconditional, then condition on the autoencoder
+#         if unconditional == 0:
+#           # compare variational vs. basic autoencoder
+#           no_sample_vaes = [0]  # [0, 1]
+#           for no_sample_vae in no_sample_vaes:
+#             exp_name = '{}_unc{}_nosam{}_d{}_pca{}'.format(
+#                 job_name, unconditional, no_sample_vae, diff, pca_red)
+#             hps_model.parse('pca_dim_reduce=%d' % pca_red)
+#             hps_model.parse('unconditional=%d' % unconditional)
+#             hps_model.parse('difference_input=%d' % diff)
+#             hps_model.parse('no_sample_vae=%d' % no_sample_vae)
+#             model_save_path = (
+#                 '/cns/is-d/home/brain-arts/rs=6.3/experiments/'
+#                 'korymath/embedding_rnn/' + model_path_subdir + exp_name + '/')
+#             # run the synthesis and visualization
+#             (all_mse[exp_name], gen_path_root) = run_synth_and_viz(
+#                 hps_model=hps_model,
+#                 model_save_path=model_save_path,
+#                 gen_path_subdir=gen_path_subdir,
+#                 num_rows=num_rows,
+#                 just_figures=just_figures,
+#                 exp_name=exp_name,
+#                 temperature=temperature,
+#                 temperature_2=temperature_2,
+#                 greedy=greedy,
+#                 slice_test_set=slice_test_set)
 
-            # print best row for this experiment
-            print 'minimum for: ', exp_name
-            min_idx = min(enumerate(all_mse[exp_name]), key=op.itemgetter(1))[0]
-            print 'row{}, mse: {}'.format(min_idx, all_mse[exp_name][min_idx])
+#             # print best row for this experiment
+#             print 'minimum for: ', exp_name
+#             min_idx = min(enumerate(all_mse[exp_name]), key=op.itemgetter(1))[0]
+#             print 'row{}, mse: {}'.format(min_idx, all_mse[exp_name][min_idx])
 
-            # save all_mse on each step
-            print 'updating saved error dictionary'
-            pickle_path = (
-                gen_path_root + 'all_mse{}.pkl'.format(all_mse_counter))
-            all_mse_pkl = gfile.Open(pickle_path, 'a+')
-            pickle.dump(all_mse, all_mse_pkl)
-            print 'saved to: ' + pickle_path
-            all_mse_counter += 1
-            all_mse_pkl.close()
+#             # save all_mse on each step
+#             print 'updating saved error dictionary'
+#             pickle_path = (
+#                 gen_path_root + 'all_mse{}.pkl'.format(all_mse_counter))
+#             all_mse_pkl = gfile.Open(pickle_path, 'a+')
+#             pickle.dump(all_mse, all_mse_pkl)
+#             print 'saved to: ' + pickle_path
+#             all_mse_counter += 1
+#             all_mse_pkl.close()
 
-        else:
-          exp_name = '{}_unc{}_d{}_pca{}'.format(job_name, unconditional, diff,
-                                                 pca_red)
-          hps_model.parse('pca_dim_reduce=%d' % pca_red)
-          hps_model.parse('unconditional=%d' % unconditional)
-          hps_model.parse('difference_input=%d' % diff)
-          model_save_path = (
-              '/cns/is-d/home/brain-arts/rs=6.3/experiments/'
-              'korymath/embedding_rnn/' + model_path_subdir + exp_name + '/')
-          # run the synthesis and visualization
-          (all_mse[exp_name], gen_path_root) = run_synth_and_viz(
-              hps_model=hps_model,
-              model_save_path=model_save_path,
-              gen_path_subdir=gen_path_subdir,
-              num_rows=num_rows,
-              just_figures=just_figures,
-              exp_name=exp_name,
-              temperature=temperature,
-              temperature_2=temperature_2,
-              greedy=greedy,
-              slice_test_set=slice_test_set)
+#         else:
+#           exp_name = '{}_unc{}_d{}_pca{}'.format(job_name, unconditional, diff,
+#                                                  pca_red)
+#           hps_model.parse('pca_dim_reduce=%d' % pca_red)
+#           hps_model.parse('unconditional=%d' % unconditional)
+#           hps_model.parse('difference_input=%d' % diff)
+#           model_save_path = (
+#               '/cns/is-d/home/brain-arts/rs=6.3/experiments/'
+#               'korymath/embedding_rnn/' + model_path_subdir + exp_name + '/')
+#           # run the synthesis and visualization
+#           (all_mse[exp_name], gen_path_root) = run_synth_and_viz(
+#               hps_model=hps_model,
+#               model_save_path=model_save_path,
+#               gen_path_subdir=gen_path_subdir,
+#               num_rows=num_rows,
+#               just_figures=just_figures,
+#               exp_name=exp_name,
+#               temperature=temperature,
+#               temperature_2=temperature_2,
+#               greedy=greedy,
+#               slice_test_set=slice_test_set)
 
-          # print best row for this experiment
-          print 'minimum for: ', exp_name
-          min_idx = min(enumerate(all_mse[exp_name]), key=op.itemgetter(1))[0]
-          print 'row{}, mse: {}'.format(min_idx, all_mse[exp_name][min_idx])
+#           # print best row for this experiment
+#           print 'minimum for: ', exp_name
+#           min_idx = min(enumerate(all_mse[exp_name]), key=op.itemgetter(1))[0]
+#           print 'row{}, mse: {}'.format(min_idx, all_mse[exp_name][min_idx])
 
-          # save all_mse on each step
-          print 'updating saved error dictionary'
-          pickle_path = (
-              gen_path_root + 'all_mse{}.pkl'.format(all_mse_counter))
-          all_mse_pkl = gfile.Open(pickle_path, 'a+')
-          pickle.dump(all_mse, all_mse_pkl)
-          print 'saved to: ' + pickle_path
-          all_mse_counter += 1
-          all_mse_pkl.close()
+#           # save all_mse on each step
+#           print 'updating saved error dictionary'
+#           pickle_path = (
+#               gen_path_root + 'all_mse{}.pkl'.format(all_mse_counter))
+#           all_mse_pkl = gfile.Open(pickle_path, 'a+')
+#           pickle.dump(all_mse, all_mse_pkl)
+#           print 'saved to: ' + pickle_path
+#           all_mse_counter += 1
+#           all_mse_pkl.close()
 
-  # make aggregate plot for figure 6
-  make_aggregate_boxplot(
-      all_mse=all_mse,
-      gen_path_root=gen_path_root,
-      num_rows=num_rows,
-      temperature=temperature,
-      temperature_2=temperature_2,
-      greedy=greedy)
-  print 'done final experiment synthesis and visualization'
+#   # make aggregate plot for figure 6
+#   make_aggregate_boxplot(
+#       all_mse=all_mse,
+#       gen_path_root=gen_path_root,
+#       num_rows=num_rows,
+#       temperature=temperature,
+#       temperature_2=temperature_2,
+#       greedy=greedy)
+#   print 'done final experiment synthesis and visualization'
 
 
 def single_borg_test():
@@ -1036,26 +1056,36 @@ def single_borg_test():
   # NOTE: these parameters MUST match the loaded model hyperparameters
   # blog_post_large default parameters
   # as defined in script_utils.py
-  exp_name = 'blog_13_unc0_nosam1_d1_pca1'
-  model_path_subdir = 'blog_13/'
-  hps_model.parse('rnn_size=%d' % 1024)
-  hps_model.parse('model=%s' % 'layer_norm')
-  hps_model.parse('num_layers=%d' % 2)
-  hps_model.parse('enc_rnn_size=%d' % 1024)
-  hps_model.parse('z_size=%d' % 128)
-  hps_model.parse('num_mixture=%d' % 20)
-  hps_model.parse('pca_dim_reduce=%d' % 1)
-  hps_model.parse('unconditional=%d' % 0)
-  hps_model.parse('difference_input=%d' % 1)
-  hps_model.parse('no_sample_vae=%d' % 1)
+  
+  # exp_name = 'blog_13_unc0_nosam1_d1_pca1'
+  # model_path_subdir = 'blog_13/'
+  
+  # hparam was set with a FLAG in embedding_rnn
+  exp_name = 'blog_13_unc0_nosam1_d0_pca0'
+  hps_model.parse('rnn_size=%d' % 1000)
+  
+  # hps_model.parse('rnn_size=%d' % 1024)
+  # hps_model.parse('model=%s' % 'layer_norm')
+  # hps_model.parse('num_layers=%d' % 2)
+  # hps_model.parse('enc_rnn_size=%d' % 1024)
+  # hps_model.parse('z_size=%d' % 128)
+  # hps_model.parse('num_mixture=%d' % 20)
+  # hps_model.parse('pca_dim_reduce=%d' % 1)
+  # hps_model.parse('unconditional=%d' % 0)
+  # hps_model.parse('difference_input=%d' % 1)
+  # hps_model.parse('no_sample_vae=%d' % 1)
 
   # generation parameters
-  gen_path_subdir = 'old_test_8_mse/'
+  gen_path_subdir = 'first_gen_test/'
+
+  # TODO(kmathewson): we know the instruments
+  # used as the titles for the figures
   slice_test_set = [10, 11, 35, 64, 100, 121]
+
   # TODO(korymath): fix slice test set
   # num_rows must be < slice_test_set, else set num_rows to len(slice_test_set)
   num_rows = 6
-  just_figures = 1
+  just_figures = 0
   temperature = 0.5
   temperature_2 = 0.3
   greedy = True
@@ -1063,8 +1093,12 @@ def single_borg_test():
   # collect all mse in a dictionary
   all_mse = {}
 
-  model_save_path = (
-      'korymath/embedding_rnn/' + model_path_subdir + exp_name + '/')
+  # model_save_path = (
+  #     'korymath/embedding_rnn/' + model_path_subdir + exp_name + '/')
+
+  # add this as a parameter in the synthesize run code
+  # model_save_path = ('/home/ubuntu/magenta-models/embedding_rnn/models/blog_13_unc0_nosam1_d0_pca0/')
+  model_save_path = ('/home/ubuntu/embedding_rnn_train_bu/embedding_rnn')
 
   # return the dictionary of errors, and the generation file path
   (all_mse[exp_name], gen_path_root) = run_synth_and_viz(
@@ -1095,13 +1129,13 @@ def main(_):
 
   # run the final experiment
   # need to make sure that generation folder exists
-  final_experiment()
+  # final_experiment()
 
   # run full gen on blog_5 models
   # blog_5()
 
   # run a single model test
-  # single_borg_test()
+  single_borg_test()
 
 
 if __name__ == '__main__':
