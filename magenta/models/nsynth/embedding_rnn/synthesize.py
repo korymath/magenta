@@ -773,9 +773,9 @@ def run_synth_and_viz(hps_model=None,
     print 'Samples synthesized'
 
     # make sure that the files are appropriately closed
-    print 'Closing files'
-    for f in gen_files:
-      f.close()
+    # print 'Closing files'
+    # for f in gen_files:
+      # f.close()
     print 'Files closed.'
 
     print 'Done, returning MSE for each reconstruction'
