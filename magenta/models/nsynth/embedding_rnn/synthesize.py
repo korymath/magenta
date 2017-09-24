@@ -749,20 +749,27 @@ def run_synth_and_viz(hps_model=None,
     gen_files = []
     for key in key_all:
       gen_file_path = gen_path_root + exp_name + key + '.wav'
-      gen_files.append(tf.gfile.GFile(gen_file_path, 'w'))
-    # print gen_files
+      # gen_files.append(tf.gfile.GFile(gen_file_path, 'w+'))
+      gen_files.append(gen_file_path)
+    
+    print('gen_files', gen_files)
+    print('Generating: {} files...'.format(len(gen_files)))
 
     ## Synthesize the originals, interpolations, and reconstructed embeddings
     # Define the location of the NSynth WaveNet model checkpoint
 
     # test generation with the noise model
-    checkpoint_path = ('')
+
+    # TODO(kmathewson): need a checkpoint for a wavenet model
+    checkpoint_path = ('/home/ubuntu/wavenet-ckpt/model.ckpt-200000')
 
     print 'Using checkpoint:', checkpoint_path
     # Synthesize audio with fastgen.synthesize() from third_party magenta
-    print 'Synthesizing samples'
-    fastgen.synthesize(
-        encodings=z_all, save_paths=gen_files, checkpoint_path=checkpoint_path)
+    print 'Synthesizing samples...'
+    fastgen.synthesize(encodings=z_all, 
+                       save_paths=gen_files, 
+                       checkpoint_path=checkpoint_path)
+    
     print 'Samples synthesized'
 
     # make sure that the files are appropriately closed
