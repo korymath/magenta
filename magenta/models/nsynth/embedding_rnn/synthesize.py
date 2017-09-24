@@ -1070,11 +1070,15 @@ def single_borg_test():
 
   # generation parameters
   gen_path_subdir = 'first_gen_test/'
+
+  # TODO(kmathewson): we know the instruments
+  # used as the titles for the figures
   slice_test_set = [10, 11, 35, 64, 100, 121]
+
   # TODO(korymath): fix slice test set
   # num_rows must be < slice_test_set, else set num_rows to len(slice_test_set)
   num_rows = 6
-  just_figures = 1
+  just_figures = 0
   temperature = 0.5
   temperature_2 = 0.3
   greedy = True
