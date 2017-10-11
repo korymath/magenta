@@ -24,17 +24,6 @@ package(
 licenses(["notice"])  # Apache 2.0
 
 py_binary(
-    name = "run",
-    srcs = [
-        "run.py",
-    ],
-    deps = [
-        # numpy dep
-        # tensorflow dep
-    ],
-)
-
-py_binary(
     name = "embedding_rnn",
     srcs = [
         "embedding_rnn.py",
