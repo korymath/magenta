@@ -25,6 +25,8 @@ FLAGS = tf.flags.FLAGS
 # tf.flags.DEFINE_string('hparam', 'rnn_size=1000,data_set=train_z.npy',
 #                        'default model params string to be parsed by HParams.')
 
+tf.logging.set_verbosity(tf.logging.INFO)
+
 
 def invert_to_model_format(sample):
   # model the difference of reverse sequence
