@@ -5,14 +5,21 @@ import operator as op
 import pickle
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
+
+import random
+import string
 import numpy as np
-# todo(kmathewson): make seaborn load if available
 import seaborn as sns
 import tensorflow as tf
 import magenta.models.nsynth.wavenet.fastgen as fastgen
 from magenta.models.nsynth.embedding_rnn import embedding_rnn
 
 FLAGS = tf.flags.FLAGS
+
+tf.flags.DEFINE_string('model_save_path', '',
+                       'directory of trained model.')
+tf.flags.DEFINE_string('data_path', '',
+                       'directory of embedding data.')
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -544,29 +551,22 @@ def run_synth_and_viz(hps_model=None,
   print 'sample model built', sample_model
 
   print 'start the session'
-  sess = tf.InteractiveSession()
+  config = tf.ConfigProto()
+  config.gpu_options.allow_growth = True
+  sess = tf.Session(config=config)
   sess.run(tf.global_variables_initializer())
 
   print 'load trained model', model_save_path
   # load model
   embedding_rnn.load_model(sess, model_save_path)
   
-  #with tf.gfile.Open(('/c60_z.npy'), 'r') as f:
-  with tf.gfile.Open(('/home/ubuntu/magenta-models/embedding_rnn/data/original/train_z.npy'), 'r') as f:
+  with tf.gfile.Open(FLAGS.data_path, 'r') as f:
     test_recon_z = np.load(f)
   print('test_recon_z.shape', test_recon_z.shape)
 
-  # load testing reconstruction set
-  # with tf.gfile.Open(('60_key.npy'), 'r') as f:
-  # use the actual path of the key file
-  # with tf.gfile.Open(('/home/ubuntu/magenta-models/embedding_rnn/data/original/train_pitch_one_hot.npy'), 'r') as f:
-   # test_recon_list_keys = np.load(f)
-
-  # TODO(korymath): can we recover the keys for the recon labelling?
-  # add a set of random keys
-  import random
-  import string
-  test_recon_list_keys = (np.asarray([''.join(random.choice(string.ascii_uppercase + string.digits) 
+  # Use random strings for keys in generation
+  test_recon_list_keys = (np.asarray([''.join(random.choice(
+    string.ascii_uppercase + string.digits) 
     for _ in range(20)) for _ in range(test_recon_z.shape[0])]))
   print('test_recon_list_keys[:1]', test_recon_list_keys[:1])
 
@@ -820,23 +820,18 @@ def make_aggregate_boxplot(all_mse=None,
   print 'Fig6 saved to:', gen_path_root
 
 
-def single_borg_test():
+def single_model_synth_viz():
   """Synthesize and visualize from a single model."""
+
+  print 'embedding_rnn synthesis'
+  exp_name = 'first-test' # 'blog_13_unc0_nosam1_d0_pca0'  
+
+  print 'hyper params:'
   # default hyperparameters
   hps_model = embedding_rnn.default_hps()
 
   ## Set training specific hyperparameters
   # NOTE: these parameters MUST match the loaded model hyperparameters
-  # blog_post_large default parameters
-  # as defined in script_utils.py
-  
-  # exp_name = 'blog_13_unc0_nosam1_d1_pca1'
-  # model_path_subdir = 'blog_13/'
-  
-  # hparam was set with a FLAG in embedding_rnn
-  exp_name = 'blog_13_unc0_nosam1_d0_pca0'
-  hps_model.parse('rnn_size=%d' % 1000)
-  
   # hps_model.parse('rnn_size=%d' % 1024)
   # hps_model.parse('model=%s' % 'layer_norm')
   # hps_model.parse('num_layers=%d' % 2)
@@ -851,12 +846,10 @@ def single_borg_test():
   # generation parameters
   gen_path_subdir = 'first_gen_test/'
 
-  # TODO(kmathewson): we know the instruments
-  # used as the titles for the figures
+  # Several known instruments used as the titles for the figures
   slice_test_set = [10, 11, 35, 64, 100, 121]
 
-  # TODO(korymath): fix slice test set
-  # num_rows must be < slice_test_set, else set num_rows to len(slice_test_set)
+  # parameters for synthesis and visualization
   num_rows = 6
   just_figures = 0
   temperature = 0.5
@@ -865,13 +858,9 @@ def single_borg_test():
 
   # collect all mse in a dictionary
   all_mse = {}
-
-  # model_save_path = (
-  #     'korymath/embedding_rnn/' + model_path_subdir + exp_name + '/')
-
-  # add this as a parameter in the synthesize run code
-  # model_save_path = ('/home/ubuntu/magenta-models/embedding_rnn/models/blog_13_unc0_nosam1_d0_pca0/')
-  model_save_path = ('/home/ubuntu/embedding_rnn_train_bu/embedding_rnn')
+  
+  # noise added during training
+  model_save_path = FLAGS.model_save_path
 
   # return the dictionary of errors, and the generation file path
   (all_mse[exp_name], gen_path_root) = run_synth_and_viz(
@@ -897,18 +886,8 @@ def single_borg_test():
 
 
 def main(_):
-  print 'embedding_rnn synthesis'
-  print 'hyper params'
-
-  # run the final experiment
-  # need to make sure that generation folder exists
-  # final_experiment()
-
-  # run full gen on blog_5 models
-  # blog_5()
-
-  # run a single model test
-  single_borg_test()
+  # Synthesis and Visualization for a Single Trained Model 
+  single_model_synth_viz()
 
 
 if __name__ == '__main__':

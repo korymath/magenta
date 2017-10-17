@@ -11,6 +11,8 @@ import time
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
+# logging memory
+os.environ['TF_CPP_MIN_VLOG_LEVEL']='3'
 import tensorflow as tf
 from tensorflow.python.framework import ops
 
@@ -22,9 +24,10 @@ tf.flags.DEFINE_string('log_root', '/tmp/embedding_rnn',
                        'directory to store all dumps.')
 tf.flags.DEFINE_string('checkpoint_path', '',
                        'directory to checkpoint to restore.')
-tf.flags.DEFINE_string('hparam', 'rnn_size=1000,data_set=train_z.npy',
+tf.flags.DEFINE_string('hparam', 'rnn_size=1024,data_set=train_z.npy',
                        'default model params string to be parsed by HParams.')
 
+tf.logging.set_verbosity(tf.logging.INFO)
 
 def default_hps():
   return tf.contrib.training.HParams(
@@ -1586,7 +1589,9 @@ def main(_):
   eval_model = Model(eval_hps_model, reuse=True)
 
   # start the session and start training
-  sess = tf.Session()
+  config = tf.ConfigProto()
+  config.gpu_options.allow_growth = True
+  sess = tf.Session(config=config)
   sess.run(tf.global_variables_initializer())
   if FLAGS.checkpoint_path:
     load_model(sess, FLAGS.checkpoint_path)
